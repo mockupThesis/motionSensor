@@ -1,0 +1,38 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceRoot}",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/cores/esp8266",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/tools/sdk/include",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/tools/sdk/lwip/include",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/variants/adafruit/",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266WiFi/src",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266mDNS",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ArduinoOTA",
+                "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/Wire",
+                "/home/bayi/Work/_Arduino_/libraries/ArduinoJson/src",
+                "/home/bayi/Work/_Arduino_/libraries/ESPAsyncTCP/src",
+                "/home/bayi/Work/_Arduino_/libraries/ESPAsyncWebServer/src",
+                "/home/bayi/Work/_Arduino_/libraries/Adafruit_Sensor",
+                "/home/bayi/Work/_Arduino_/libraries/Adafruit_BNO055"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": false,
+                "path": [
+                    "${workspaceRoot}",
+                    "/home/bayi/.arduino15/packages/esp8266/hardware/esp8266/2.4.1",
+                    "/home/bayi/Work/_Arduino_/libraries"
+                ]
+            },
+            "defines": [ "ARDUINO=100" ],
+            "intelliSenseMode": "clang-x64",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 3
+}
