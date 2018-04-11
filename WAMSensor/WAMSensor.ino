@@ -114,6 +114,16 @@ void onEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
     // Jelenleg tök mindegy mit küld, ezt kapja ...
     uint8_t sensorNum = 0;
     sensorsGetEvent(sensorNum, &event);
+
+    char buff[10];
+    // MQTT adatküldés
+    dtostrf(event.orientation.x, 4, 2, buff);
+    mqttClient.publish("sensor/yaw", 0, true, buff);
+    dtostrf(event.orientation.y, 4, 2, buff);
+    mqttClient.publish("sensor/pitch", 0, true, buff);
+    dtostrf(event.orientation.z, 4, 2, buff);
+    mqttClient.publish("sensor/roll", 0, true, buff);
+    
     if (type == WS_EVT_DATA)
     {
         // @TODO: Send sensornum

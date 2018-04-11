@@ -102,4 +102,11 @@ void sensorsGetEvent(uint8_t sensorNum, sensors_event_t* event)
     }
 }
 
+SensorType getSensor(){
+    if (sensor.inited)
+    {
+        return sensor;
+    }
+}
+
 #endif
