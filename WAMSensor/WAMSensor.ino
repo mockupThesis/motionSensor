@@ -129,8 +129,8 @@ void onEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
     if (type == WS_EVT_DATA)
     {
         // @TODO: Send sensornum
-        //ws.printfAll("%.2f\t%.2f\t%.2f", event.orientation.x, event.orientation.y, event.orientation.z);
-        ws.printfAll("%.2f\t%.2f\t%.2f\t%.2f", quat.w(), quat.x(), quat.y(), quat.z());
+        ws.printfAll("%.2f\t%.2f\t%.2f", event.orientation.x, event.orientation.y, event.orientation.z);
+        //ws.printfAll("%.2f\t%.2f\t%.2f\t%.2f", quat.w(), quat.x(), quat.y(), quat.z());
     }
 }
 
