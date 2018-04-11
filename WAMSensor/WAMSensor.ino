@@ -1,6 +1,8 @@
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#include <Ticker.h>
+#include <AsyncMqttClient.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoOTA.h>
@@ -18,7 +20,6 @@ extern "C"
 #include "Multiplexer.h"
 #include "Sensors.h"
 #include "responses.h"
-#include "PubSubClient.h"
 
 #define VERSION                 1063
 #define CONFIG_PATH             "/config.json"
@@ -27,6 +28,8 @@ extern "C"
 #define DEFAULT_SSID            "WAMSensor"
 #define DEFAULT_PASS            "Dildozer4"
 #define DEFAULT_AP              1
+#define MQTT_HOST IPAddress(193, 151, 118, 177)
+#define MQTT_PORT 1883
 
 typedef struct {
   bool shouldReboot;
@@ -49,12 +52,8 @@ AsyncWebServer  cmdServer(80);
 AsyncWebSocket  ws("/ws");
 sensors_event_t event;
 
-const char* mqttServer = "tcp://mqtt.bayi.hu";
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-os_timer_t myTimer;
-bool tickOccured;
+AsyncMqttClient mqttClient;
+Ticker mqttReconnectTimer;
 
 /**
   * @TODO:
@@ -79,17 +78,25 @@ void initMDNS()
 
 void initMQTT()
 {
-    consolePrint("MQTT", "Connecting to MQTT Broker: %s:%s", mqttServer, "1833");
-    client.setServer(mqttServer, 1883);
-    String clientId = "SensorWifi-";
-    clientId += String(random(0xffff), HEX);
-    if (client.connect(clientId.c_str())) 
-    {
-        client.publish("sensor/status", "connected");
-        consolePrint("MQTT", "Connected to MQTT Broker.");
-    } else {
-        consolePrint("MQTT", "FAILED to connect to MQTT Broker!");
-    }
+    consolePrint("MQTT", "Connecting to MQTT Broker!");
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+    mqttClient.setCredentials("bayi", "asstor");
+    mqttClient.connect();
+}
+
+void onMqttConnect(bool sessionPresent) {
+    consolePrint("MQTT", "Connected to MQTT Broker.");
+    mqttClient.publish("sensor/status", 0, true, "connected");
+}
+
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
+  consolePrint("MQTT", "Disconnected from MQTT Broker.");
+
+  //if (WiFi.status() != WL_CONNECTED) {
+    //mqttReconnectTimer.once(2, connectToMqtt);
+  //}
 }
 
 void initWifi()
@@ -206,6 +213,7 @@ bool connectWifi()
         }
     }
     consolePrint("Wifi", "Connected. IP Address: %s", systemState.ip.toString().c_str());
+    initMQTT();
     otaHandler.begin();
     initMDNS();
     systemState.connectTries = 0;
@@ -276,26 +284,6 @@ void cmdReconnect(AsyncWebServerRequest* request)
     sendOkResponse(request);
 }
 
-void sendData(const char* channel, float data)
-{
-    char msg[50];
-    String msgString = String(data);
-    msgString.toCharArray(msg, 50);
-    client.publish(channel, msg);
-}
-
-// start of timerCallback
-void timerCallback(void *pArg) {
-
-      tickOccured = true;
-
-} // End of timerCallback
-
-void user_init(void) {
-  os_timer_setfn(&myTimer, timerCallback, NULL);
-  os_timer_arm(&myTimer, 100, true);
-}
-
 void setup()
 {
     system_update_cpu_freq(160);
@@ -304,21 +292,17 @@ void setup()
     digitalWrite(LED_BUILTIN, HIGH);
 
     initSerial();
-    tickOccured = false;
 
     conf.begin();
 
     // @TODO: Itt van valami gebasz, pár újraindítás után az I2C busz "beragad" valami fenn tartja az SDA-t és nem engedi el többé ...
     Wire.begin();
 
-    user_init();
-
     sensorsBegin();
     systemState.hasSensor = sensorsScan();
 
     initServer();
     initWifi();
-    initMQTT();
 
     consolePrint(TAG, "Free memory: %u", ESP.getFreeHeap());
 }
@@ -329,21 +313,7 @@ void loop()
 
     if (systemState.hasSensor)
     {
-        sensorsHandle();
-        client.loop();
-
-        if (tickOccured == true)
-        {
-          Serial.print("Tick!");
-          sendData("sensor/yaw", 120);
-          sendData("sensor/pitch", 120);
-          sendData("sensor/roll", 120);
-          tickOccured = false;
-    
-        }
-        
-        
-        //cmdServer.handleRequest(); 
+        sensorsHandle();  
     }
 
     if (systemState.shouldReboot)
