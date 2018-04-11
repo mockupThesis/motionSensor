@@ -55,6 +55,9 @@ sensors_event_t event;
 AsyncMqttClient mqttClient;
 Ticker mqttReconnectTimer;
 
+char buff[10];
+imu::Quaternion quat;
+
 /**
   * @TODO:
   * - wifi setup az html-be, meg connect gomb meg cím beírása stb.
@@ -115,7 +118,6 @@ void onEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
     uint8_t sensorNum = 0;
     sensorsGetEvent(sensorNum, &event);
 
-    char buff[10];
     // MQTT adatküldés
     dtostrf(event.orientation.x, 4, 2, buff);
     mqttClient.publish("sensor/yaw", 0, true, buff);
@@ -127,9 +129,8 @@ void onEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
     if (type == WS_EVT_DATA)
     {
         // @TODO: Send sensornum
-        ws.printfAll("%.2f\t%.2f\t%.2f", event.orientation.x, event.orientation.y, event.orientation.z);
-
-        Serial.printf("%.2f\t%.2f\t%.2f", event.orientation.x, event.orientation.y, event.orientation.z);
+        //ws.printfAll("%.2f\t%.2f\t%.2f", event.orientation.x, event.orientation.y, event.orientation.z);
+        ws.printfAll("%.2f\t%.2f\t%.2f\t%.2f", quat.w(), quat.x(), quat.y(), quat.z());
     }
 }
 
@@ -323,7 +324,18 @@ void loop()
 
     if (systemState.hasSensor)
     {
-        sensorsHandle();  
+        sensorsHandle();
+        quat = getSensor().ctrl->getQuat();
+
+        dtostrf(quat.w(), 4, 2, buff);
+        mqttClient.publish("sensor/quatW", 0, true, buff);
+        dtostrf(quat.y(), 4, 2, buff);
+        mqttClient.publish("sensor/quatY", 0, true, buff);
+        dtostrf(quat.x(), 4, 2, buff);
+        mqttClient.publish("sensor/quatX", 0, true, buff);
+        dtostrf(quat.z(), 4, 2, buff);
+        mqttClient.publish("sensor/quatZ", 0, true, buff);
+  
     }
 
     if (systemState.shouldReboot)
