@@ -1,0 +1,2 @@
+MAC/LINUX: curl -X POST -d '{"ssid":"UPC1CB3684","pass":"Q4f5avywujxa","ap":false}' 192.168.4.1/api/wifi
+curl -X POST 192.168.4.1/api/save
