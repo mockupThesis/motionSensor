@@ -30,6 +30,9 @@ extern "C"
 #define DEFAULT_AP              1
 #define MQTT_HOST IPAddress(193, 151, 118, 177)
 #define MQTT_PORT 1883
+#define DEVICE_FIX_IP IPAddress(192, 168, 1, 219) 
+#define GATEWAY IPAddress(192, 168, 1, 254)  
+#define SUBNET IPAddress(255, 255, 255, 0)
 
 typedef struct {
   bool shouldReboot;
@@ -194,6 +197,7 @@ bool connectWifi()
         systemState.isAp = true;
     } else {
         consolePrint("Wifi", "Trying to connect to: %s" , conf.ssid());
+        WiFi.config(DEVICE_FIX_IP, GATEWAY, SUBNET);
         WiFi.mode(WIFI_STA);
         WiFi.begin(conf.ssid(), conf.password());
         int timeout = 0;
@@ -241,7 +245,7 @@ void cmdStatus(AsyncWebServerRequest* request)
     DynamicJsonBuffer jsonBuffer;
     JsonObject &json = jsonBuffer.createObject();
     json["version"] = VERSION;
-    json["wifi"] = conf.ssid();
+    json["ssid"] = conf.ssid();
     json["ap"] = conf.apMode() == 1;
     json["ip"] = systemState.ip.toString();
     json["heap"] = ESP.getFreeHeap();
@@ -254,10 +258,13 @@ void cmdStatus(AsyncWebServerRequest* request)
 
 void cmdWifi(AsyncWebServerRequest* request)
 {
+    consolePrint("cmdWifi", "POST REQUEST");
     int params = request->params();
+    consolePrint("cmdWifi", "PARAMS COUNT %f", params);
     for (int i = 0; i < params; ++i)
     {
         AsyncWebParameter* p = request->getParam(i);
+        consolePrint("cmdWifi", "PARAM %s", p->name().c_str());
         if (p->name().startsWith("body"))
         {
             DynamicJsonBuffer jsonBuffer;
