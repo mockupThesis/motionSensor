@@ -50,7 +50,7 @@ typedef struct {
 State systemState;
 const char* TAG = "Main";
 OTAHandler otaHandler(DEVICENAME);
-Configuration   conf(CONFIG_PATH, DEFAULT_SSID, DEFAULT_PASS, DEFAULT_AP);
+Configuration   conf(CONFIG_PATH, DEFAULT_SSID, DEFAULT_PASS, MQTT_HOST.toString().c_str(), MQTT_PORT, DEFAULT_AP);
 AsyncWebServer  cmdServer(80);
 AsyncWebSocket  ws("/ws");
 sensors_event_t event;
@@ -250,6 +250,8 @@ void cmdStatus(AsyncWebServerRequest* request)
     json["ip"] = systemState.ip.toString();
     json["heap"] = ESP.getFreeHeap();
     json["connected"] = WiFi.status() == WL_CONNECTED;
+    json["mqtt_host"] = conf.mqttHost();
+    json["mqtt_port"] = conf.mqttPort();
     json.printTo(*response);
     request->send(response);
 

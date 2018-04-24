@@ -10,7 +10,8 @@
 class Configuration
 {
 public:
-    Configuration(const char* configFileName, const char* defaultSsid, const char* defaultPass, int defaultAp);
+    Configuration(const char* configFileName, const char* defaultSsid, const char* defaultPass,
+                  const char* defaultMqttHost, int mqttPort, int defaultAp);
     bool begin();
     bool load();
     bool save();
@@ -21,6 +22,8 @@ public:
     void setPassword(const char* password);
     int apMode() const;
     void setApMode(int apMode);
+    const char* mqttHost() const;
+    int mqttPort() const;
 
 
 private:
@@ -28,7 +31,9 @@ private:
     const char* mFileName;
     char mSsid[32];
     char mPass[63];
+    char mMqttHost[32];
     int mApMode;
+    int mMqttPort;
 
     void createConfigFile();
 };

@@ -3,12 +3,15 @@
 
 const char* Configuration::TAG = "Config";
 
-Configuration::Configuration(const char* configFilename, const char* defaultSsid, const char* defaultPass, int defaultAp) :
+Configuration::Configuration(const char* configFilename, const char* defaultSsid, const char* defaultPass,
+                             const char* defaultMqttHost, int mqttPort, int defaultAp) :
     mFileName(configFilename),
-    mApMode(defaultAp)
+    mApMode(defaultAp),
+    mMqttPort(mqttPort)
 {
     strlcpy(this->mSsid, defaultSsid, sizeof(this->mSsid));
     strlcpy(this->mPass, defaultPass, sizeof(this->mPass));
+    strlcpy(this->mMqttHost, defaultMqttHost, sizeof(this->mMqttHost));
 }
 
 bool Configuration::begin()
@@ -68,6 +71,12 @@ bool Configuration::load()
     if (root.containsKey("ap"))
         this->mApMode = root["ap"];
 
+    if (root.containsKey("mqtt_host"))
+        strlcpy(this->mMqttHost, root["mqtt_host"], sizeof(this->mMqttHost));
+
+    if (root.containsKey("mqtt_port"))
+        this->mMqttPort = root["mqtt_port"];
+
     consolePrint(TAG, "Loaded: ");
     root.prettyPrintTo(Serial);
     Serial.println();
@@ -90,7 +99,8 @@ bool Configuration::save()
     root["ssid"] = this->mSsid;
     root["pass"] = this->mPass;
     root["ap"] = this->mApMode;
-
+    root["mqtt_host"] = this->mMqttHost;
+    root["mqtt_port"] = this->mMqttPort;
     File file = SPIFFS.open(this->mFileName, "w");
     if (root.printTo(file) == 0) {
         consolePrint(TAG, "Failed saving config");
@@ -129,3 +139,14 @@ void Configuration::setApMode(int apMode)
 {
     this->mApMode = apMode;
 }
+
+const char* Configuration::mqttHost() const
+{
+    return this->mMqttHost;
+}
+
+int Configuration::mqttPort() const
+{
+    return this->mMqttPort;
+}
+
