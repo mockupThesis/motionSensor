@@ -28,11 +28,11 @@ extern "C"
 #define DEFAULT_SSID            "WAMSensor"
 #define DEFAULT_PASS            "Dildozer4"
 #define DEFAULT_AP              1
-#define MQTT_HOST IPAddress(193, 151, 118, 177)
-#define MQTT_PORT 1883
-#define DEVICE_FIX_IP IPAddress(192, 168, 1, 219) 
-#define GATEWAY IPAddress(192, 168, 1, 254)  
-#define SUBNET IPAddress(255, 255, 255, 0)
+#define MQTT_HOST               "mqtt.bayi.hu"
+#define MQTT_PORT               1883
+#define DEVICE_FIX_IP           IPAddress(192, 168, 1, 219) 
+#define GATEWAY                 IPAddress(192, 168, 1, 254)  
+#define SUBNET                  IPAddress(255, 255, 255, 0)
 
 typedef struct {
   bool shouldReboot;
@@ -50,7 +50,7 @@ typedef struct {
 State systemState;
 const char* TAG = "Main";
 OTAHandler otaHandler(DEVICENAME);
-Configuration   conf(CONFIG_PATH, DEFAULT_SSID, DEFAULT_PASS, MQTT_HOST.toString().c_str(), MQTT_PORT, DEFAULT_AP);
+Configuration   conf(CONFIG_PATH, DEFAULT_SSID, DEFAULT_PASS, MQTT_HOST, MQTT_PORT, DEFAULT_AP);
 AsyncWebServer  cmdServer(80);
 AsyncWebSocket  ws("/ws");
 sensors_event_t event;
@@ -84,25 +84,49 @@ void initMDNS()
 
 void initMQTT()
 {
-    consolePrint("MQTT", "Connecting to MQTT Broker!");
+    consolePrint("MQTT", "Connecting to MQTT Broker: %s:%d", conf.mqttHost(), conf.mqttPort());
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
-    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-    mqttClient.setCredentials("bayi", "asstor");
+    mqttClient.setServer(conf.mqttHost(), conf.mqttPort());
+    mqttClient.setCleanSession(true);
     mqttClient.connect();
 }
 
 void onMqttConnect(bool sessionPresent) {
     consolePrint("MQTT", "Connected to MQTT Broker.");
-    mqttClient.publish("sensor/status", 0, true, "connected");
+    mqttClient.publish("sensor/status", 0, true, "Sensor connected");
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  consolePrint("MQTT", "Disconnected from MQTT Broker.");
+  String text; 
+  switch( reason) {
+  case AsyncMqttClientDisconnectReason::TCP_DISCONNECTED:
+     text = "TCP_DISCONNECTED"; 
+     break; 
+  case AsyncMqttClientDisconnectReason::MQTT_UNACCEPTABLE_PROTOCOL_VERSION:
+     text = "MQTT_UNACCEPTABLE_PROTOCOL_VERSION"; 
+     break; 
+  case AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED:
+     text = "MQTT_IDENTIFIER_REJECTED";  
+     break;
+  case AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE: 
+     text = "MQTT_SERVER_UNAVAILABLE"; 
+     break;
+  case AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS:
+     text = "MQTT_MALFORMED_CREDENTIALS"; 
+     break;
+  case AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED:
+     text = "MQTT_NOT_AUTHORIZED"; 
+     break;
+  
+  }
+  Serial.printf(" [%8u] Disconnected from the broker reason = %s\n", millis(), text.c_str() );
+  Serial.printf(" [%8u] Reconnecting to MQTT..\n", millis());
+  mqttClient.connect();
 
-  //if (WiFi.status() != WL_CONNECTED) {
-    //mqttReconnectTimer.once(2, connectToMqtt);
-  //}
+  /*if (WiFi.status() != WL_CONNECTED) {
+    mqttClient.connect();
+  }*/
 }
 
 void initWifi()
@@ -150,6 +174,7 @@ void initServer()
     cmdServer.on("/api/wifi", HTTP_POST, cmdWifi);
     cmdServer.on("/api/save", HTTP_POST, cmdSave);
     cmdServer.on("/api/reconnect", HTTP_POST, cmdReconnect);
+    cmdServer.on("/api/mqtt", HTTP_POST, cmdMqtt);
 
     cmdServer.begin();
 
@@ -197,7 +222,7 @@ bool connectWifi()
         systemState.isAp = true;
     } else {
         consolePrint("Wifi", "Trying to connect to: %s" , conf.ssid());
-        WiFi.config(DEVICE_FIX_IP, GATEWAY, SUBNET);
+        //WiFi.config(DEVICE_FIX_IP, GATEWAY, SUBNET);
         WiFi.mode(WIFI_STA);
         WiFi.begin(conf.ssid(), conf.password());
         int timeout = 0;
@@ -302,6 +327,34 @@ void cmdReconnect(AsyncWebServerRequest* request)
 {
     systemState.shouldReconnect = true;
     sendOkResponse(request);
+}
+
+void cmdMqtt(AsyncWebServerRequest* request)
+{
+    consolePrint("cmdMqtt", "POST REQUEST");
+    int params = request->params();
+    consolePrint("cmdMqtt", "PARAMS COUNT %f", params);
+    for (int i = 0; i < params; ++i)
+    {
+        AsyncWebParameter* p = request->getParam(i);
+        consolePrint("cmdMqtt", "PARAM %s", p->name().c_str());
+        if (p->name().startsWith("body"))
+        {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.parseObject(p->value().c_str());
+            if (!root.success())
+            {
+                sendFailResponse(request);
+                return;
+            }
+            conf.setMqttHost((const char*) root["mqtt_host"]);
+            conf.setMqttPort(root["mqtt_port"]);
+            systemState.shouldSave = true;
+            sendOkResponse(request);
+            return;
+        }
+    }
+    sendBadResponse(request);
 }
 
 void setup()

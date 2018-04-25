@@ -145,8 +145,18 @@ const char* Configuration::mqttHost() const
     return this->mMqttHost;
 }
 
+void Configuration::setMqttHost(const char* mqttHost)
+{
+    strlcpy(this->mMqttHost, mqttHost, sizeof(this->mMqttHost));
+}
+
 int Configuration::mqttPort() const
 {
     return this->mMqttPort;
+}
+
+void Configuration::setMqttPort(int mqttPort)
+{
+    this->mMqttPort = mqttPort;
 }
 

@@ -23,7 +23,9 @@ public:
     int apMode() const;
     void setApMode(int apMode);
     const char* mqttHost() const;
+    void setMqttHost(const char* mqttHost);
     int mqttPort() const;
+    void setMqttPort(int mqttPort);
 
 
 private:
