@@ -60,6 +60,7 @@ Ticker mqttReconnectTimer;
 
 char buff[10];
 imu::Quaternion quat;
+char quatbuff[32];
 
 /**
   * @TODO:
@@ -389,14 +390,24 @@ void loop()
         sensorsHandle();
         quat = getSensor().ctrl->getQuat();
 
+        String quatMessage = "";
         dtostrf(quat.w(), 4, 2, buff);
-        mqttClient.publish("sensor/quatW", 0, true, buff);
-        dtostrf(quat.y(), 4, 2, buff);
-        mqttClient.publish("sensor/quatY", 0, true, buff);
+        quatMessage += (buff);
+        quatMessage += ("|");
+        //mqttClient.publish("sensor/quatW", 0, true, buff);
         dtostrf(quat.x(), 4, 2, buff);
-        mqttClient.publish("sensor/quatX", 0, true, buff);
+        quatMessage += (buff);
+        quatMessage += ("|");
+        //mqttClient.publish("sensor/quatY", 0, true, buff);
+        dtostrf(quat.y(), 4, 2, buff);
+        quatMessage += (buff);
+        quatMessage += ("|");
+        //mqttClient.publish("sensor/quatX", 0, true, buff);
         dtostrf(quat.z(), 4, 2, buff);
-        mqttClient.publish("sensor/quatZ", 0, true, buff);
+        quatMessage += (buff);
+        quatMessage += ("|");
+        //mqttClient.publish("sensor/quatZ", 0, true, buff);
+        mqttClient.publish("sensor/quat", 0, true, quatMessage.c_str());
   
     }
 
