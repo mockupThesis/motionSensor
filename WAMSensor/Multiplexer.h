@@ -6,6 +6,7 @@
 
 #define MULTIPLEXER_ADDRESS     0x70
 
+
 static uint8_t currentChannel = 0;
 
 static inline bool multiplexerSetChannel(uint8_t channel)

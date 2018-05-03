@@ -6,36 +6,44 @@
 #include "Multiplexer.h"
 #include "Console.h"
 
+#define SENSOR_COUNT 2
+
 // @TODO: Ebből lehetne valami classt csinálni ...
 
 const char* SENSORSTAG = "Sensors";
 
 typedef struct {
+    int32_t id;
     uint8_t port;
     uint8_t address;
     Adafruit_BNO055* ctrl;
     bool inited = false;
+    char* bone;
     sensors_event_t event;
 } SensorType;
 
 // @TODO: Ebből kellene majd egy tömb
 SensorType sensor;
 
+SensorType sensors[SENSOR_COUNT];
+int actSensor = 0;
+
 void sensorsBegin()
 {
     consolePrint(SENSORSTAG, "Initializing Sensors");
-    multiplexerSetChannel(0);
+    multiplexerSetChannel(1);
 }
 
 bool sensorsScan()
 {
     consolePrint(SENSORSTAG, "Scanning I2C Bus ...");
     bool foundSensor = false;
+    uint8_t sensorId = 55;
     for (uint8_t port = 0; port < 8; port++)
     {
         multiplexerSetChannel(port);
         consolePrint(SENSORSTAG, "I2C Port#%u", port);
-        uint8_t sensorId = 55;
+        
         for (uint8_t addr = 0; addr < 127; addr++)
         {
             Wire.beginTransmission(addr);
@@ -49,20 +57,31 @@ bool sensorsScan()
                     if (addr == 0x28 || addr == 0x29)
                     {
                         consolePrint(SENSORSTAG, "I2C Sensor Found @ 0x%X", addr);
-                        sensor.address = addr;
-                        sensor.port = port;
-                        sensor.ctrl = new Adafruit_BNO055(sensorId, addr);
-                        if (sensor.ctrl->begin())
+                        sensors[actSensor].address = addr;
+                        sensors[actSensor].port = port;
+                        sensors[actSensor].ctrl = new Adafruit_BNO055(sensorId, addr);
+                        if (sensors[actSensor].ctrl->begin())
                         {
                             consolePrint(SENSORSTAG, "Sensor inited successfully");
                             delay(1000); // Ez rohadtul kell ide
-                            sensor.ctrl->setExtCrystalUse(true);
+                            sensors[actSensor].ctrl->setExtCrystalUse(true);
                         } else {
                             consolePrint(SENSORSTAG, "Sensor init failed");
                         }
-                        sensor.inited = true;
-                        sensorId++;
+                        sensors[actSensor].inited = true;
+
+                        // Ezt itt meg atgondolni
+                        if(sensorId == 55) {
+                          consolePrint(SENSORSTAG, "right upper arm assigned to sensor");
+                          sensors[actSensor].bone = "RightUpperArm";
+                        } else {
+                          consolePrint(SENSORSTAG, "right lower arm assigned to sensor");
+                          sensors[actSensor].bone = "RightLowerArm";
+                        }
+                        
+                        sensors[actSensor].id = sensorId++;                  
                         foundSensor = true;
+                        actSensor++;
                     } else {
                         consolePrint(SENSORSTAG, "I2C Device Found @ 0x%X", addr);
                     }
@@ -88,25 +107,36 @@ void sensorsGetEvent(uint8_t sensorNum, sensors_event_t* event)
 {
     // @TODO: Ne szarja már le ennyire látványosan a sensorNum -ot ... ja, kellene hozzá a tömb
     // @TODO: Ezt inkább quaternionba kellene, na meg inkább másolni, vagy mégse, mert a calib datara is szükség lesz, szal kellene saját struct
-    if (sensor.inited)
-    {
-        // @TODO: Jobb lenne az adatokat másolni ...
-        multiplexerSetChannel(sensor.port);
-        sensor.ctrl->getEvent(event);
+    for(int i = 0; i < SENSOR_COUNT; i++) {
+      if (sensors[i].inited)
+        {
+          // @TODO: Jobb lenne az adatokat másolni ...
+          multiplexerSetChannel(sensors[i].port);
+          sensors[i].ctrl->getEvent(event);
 
-        /* Ez se jó ötlet ..
-        event->orientation.x = sensor.event.orientation.x;
-        event->orientation.y = sensor.event.orientation.y;
-        event->orientation.z = sensor.event.orientation.z;
-        */
+          /* Ez se jó ötlet ..
+          event->orientation.x = sensor.event.orientation.x;
+          event->orientation.y = sensor.event.orientation.y;
+          event->orientation.z = sensor.event.orientation.z;
+          */
+      }
     }
 }
 
-SensorType getSensor(){
-    if (sensor.inited)
+imu::Quaternion getQuaternion(int sensorId) {
+    if (sensors[sensorId].inited)
     {
-        return sensor;
+        multiplexerSetChannel(sensors[sensorId].port);
+        return sensors[sensorId].ctrl->getQuat();
     }
+}
+
+String getSensorBone(int sensorId) {
+    return sensors[sensorId].bone;
+}
+
+int getSensorCount() {
+  return SENSOR_COUNT;
 }
 
 #endif
