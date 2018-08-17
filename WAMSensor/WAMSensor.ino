@@ -412,7 +412,8 @@ void loop()
             quatMessage += (buff);
             quatMessage += ("|");
             //mqttClient.publish("sensor/quatZ", 0, true, buff);
-            consolePrint("CHANNELS", "Channel %s", buff);
+            consolePrint("CHANNELS", "Channel %s", boneChannel.c_str());
+            consolePrint("VALUE", "Value: %s", quatMessage.c_str());
             mqttClient.publish(boneChannel.c_str(), 0, true, quatMessage.c_str());
         }
   

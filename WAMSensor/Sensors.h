@@ -5,6 +5,7 @@
 #include <Adafruit_BNO055.h>
 #include "Multiplexer.h"
 #include "Console.h"
+#include "HumanBodyBones.h"
 
 #define SENSOR_COUNT 2
 
@@ -69,15 +70,9 @@ bool sensorsScan()
                             consolePrint(SENSORSTAG, "Sensor init failed");
                         }
                         sensors[actSensor].inited = true;
-
-                        // Ezt itt meg atgondolni
-                        if(sensorId == 55) {
-                          consolePrint(SENSORSTAG, "right upper arm assigned to sensor");
-                          sensors[actSensor].bone = "RightUpperArm";
-                        } else {
-                          consolePrint(SENSORSTAG, "right lower arm assigned to sensor");
-                          sensors[actSensor].bone = "RightLowerArm";
-                        }
+                        
+                        consolePrint(SENSORSTAG, "%s assigned to the sensor", getSensorTopicNameByID(sensorId));
+                        sensors[actSensor].bone = getSensorTopicNameByID(sensorId);
                         
                         sensors[actSensor].id = sensorId++;                  
                         foundSensor = true;
