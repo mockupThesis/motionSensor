@@ -60,6 +60,8 @@ Ticker mqttReconnectTimer;
 
 char buff[10];
 imu::Quaternion quat;
+imu::Vector<3> rotation;
+char rotationBuffer[32];
 char quatbuff[32];
 
 /**
@@ -394,6 +396,8 @@ void loop()
             quat = getQuaternion(i);
     
             String quatMessage = "";
+            String rotationMessage = "";
+            String jdChannel = "jd/";
             String boneChannel = "sensor/";
             boneChannel += getSensorBone(i);
             dtostrf(quat.w(), 4, 2, buff);
@@ -415,6 +419,21 @@ void loop()
             consolePrint("CHANNELS", "Channel %s", boneChannel.c_str());
             consolePrint("VALUE", "Value: %s", quatMessage.c_str());
             mqttClient.publish(boneChannel.c_str(), 0, true, quatMessage.c_str());
+
+            double yy = quat.y() * quat.y();
+            double yaw = atan2(2 * (quat.w() * quat.z() + quat.x() * quat.y()), 1 - 2*(yy+quat.z() * quat.z()));
+            yaw = 57.2958 * yaw;
+            int intYaw = round(yaw);
+            if(intYaw < 0) {
+              intYaw *= -1;
+            }
+            jdChannel += getSensorBone(i);
+            dtostrf(intYaw, 4, 2, buff);
+            rotationMessage += (buff);
+            consolePrint("CHANNELS", "Channel %s", boneChannel.c_str());
+            consolePrint("VALUE", "Value: %s", rotationMessage.c_str());
+            
+            mqttClient.publish(jdChannel.c_str(), 0, true, rotationMessage.c_str());
         }
   
     }

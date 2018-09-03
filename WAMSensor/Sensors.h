@@ -126,6 +126,14 @@ imu::Quaternion getQuaternion(int sensorId) {
     }
 }
 
+imu::Vector<3> getRotation(int sensorId) {
+    if (sensors[sensorId].inited)
+    {
+        multiplexerSetChannel(sensors[sensorId].port);
+        return sensors[sensorId].ctrl->getVector(Adafruit_BNO055::VECTOR_EULER);
+    }
+}
+
 String getSensorBone(int sensorId) {
     return sensors[sensorId].bone;
 }
